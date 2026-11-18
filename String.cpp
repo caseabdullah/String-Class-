@@ -21,15 +21,15 @@ void String::resize(int newCap)
 	char* temp = new char[newCap];
 
 	if (data != nullptr) {
-		for (int i = 0; i < (size < newCap ? size - 1 : newCap); i++)
+		for (int i = 0; i < (size < newCap ? size - 1 : newCap-1); i++)
 		{
 			temp[i] = data[i];
 		}
-		delete[]data;
+		(*this).~String();
 	}
 	temp[newCap - 1] = '\0';
-	size = newCap;
 	data = temp;
+	size = newCap;
 }
 
 void String::shrink()
@@ -84,7 +84,7 @@ String::String(const char* str) : String()
 String::String(const String& str) :String()
 {
 	if (str.data == nullptr) {
-		return;
+		(*this).~String();
 	}
 	data = new char[str.size];
 	size = str.size;
@@ -130,12 +130,12 @@ void String::input()
 	if (data != nullptr)
 	{
 		delete[]data;
+		data = nullptr;
+		size = 0;
 	}
+	resize(2);
 	char ch;
 	int i = 0;
-	if (!(*this)) {
-		resize(2);
-	}
 	while (cin.get(ch) && ch != '\n') {
 		data[i] = ch;
 		if ((i + 1) == size) {
@@ -144,6 +144,7 @@ void String::input()
 		i++;
 	}
 	data[i] = '\0';
+	shrink();
 }
 
 char& String::operator [](const int index)//'\0' index included
@@ -507,11 +508,12 @@ int String::compare(const String& s2) const
 
 String String::left(const int count)
 {
-	int nonCount = count;
-	if (!(*this) || count == 0) {
+
+	if (!(*this) || count <= 0) {
 		String empty;
 		return empty;
 	}
+	int nonCount = count;
 	if (count > getLength())
 	{
 		nonCount = getLength();
@@ -531,11 +533,11 @@ String String::left(const int count)
 
 String String::right(const int count)
 {
-	int nonCount = count;
-	if (!(*this) || count == 0) {
+	if (!(*this) || count <= 0) {
 		String empty;
 		return empty;
 	}
+	int nonCount = count;
 	if (count > getLength())
 	{
 		nonCount = getLength();
@@ -566,14 +568,17 @@ long long int String::convertToInteger() const
 	{
 		return 0;
 	}
-	for (int i = 0; i < size - 1; i++)
+	bool neg = data[0] == '-';
+	if (neg?1:0 >= size - 1)
+		return 0;
+
+	for (int i = neg?1:0; i < size - 1; i++)
 	{
 		if (data[i] < '0' || data[i]>'9' || data == nullptr)
 		{
 			return 0;
 		}
 	}
-	bool neg = data[0] == '-';
 	long long int num = 0;
 	for (int i = neg ? 1 : 0; i < size - 1; i++)
 	{
@@ -624,6 +629,11 @@ String String::operator += (const String& s2)
 	if (!s2)
 	{
 		return *this;
+	}
+	if (this == &s2)
+	{
+		String copy{ s2 };
+		return *this += copy;
 	}
 	if (data == nullptr)
 	{
